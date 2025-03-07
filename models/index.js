@@ -1,26 +1,38 @@
 const { Sequelize } = require('sequelize');
-const config = require('../config/config').development;
+const config = require('../config/config.js'); // Импортируем конфигурацию
 
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    host: config.host,
-    dialect: config.dialect,
-    dialectOptions: config.dialectOptions,
-    logging: config.logging,
-  }
-);
+// Создаем подключение Sequelize
+const sequelize = new Sequelize(config.development.database, config.development.username, config.development.password, {
+  host: config.development.host,
+  dialect: config.development.dialect,
+  dialectOptions: config.development.dialectOptions,
+  logging: config.development.logging,
+});
 
-// Проверка подключения к базе данных
-sequelize
-  .authenticate()
-  .then(() => {
+// Импортируем модели после создания `sequelize`
+const User = require('./user.js')(sequelize);
+const File = require('./file.js')(sequelize);
+const Token = require('./token.js')(sequelize);
+
+// Функция для проверки подключения
+async function authenticate() {
+  try {
+    await sequelize.authenticate();
     console.log('✅ Подключение к базе данных успешно!');
-  })
-  .catch((err) => {
-    console.error('❌ Ошибка подключения к базе данных:', err);
-  });
+  } catch (error) {
+    console.error('❌ Ошибка подключения к базе данных:', error);
+  }
+}
 
-module.exports = sequelize;
+// Синхронизация моделей
+async function syncModels() {
+  try {
+    await sequelize.sync({ force: false });  // Не удаляем таблицы, если они существуют
+    console.log('✅ Таблицы успешно созданы или обновлены');
+  } catch (error) {
+    console.error('❌ Ошибка синхронизации моделей с базой данных:', error);
+  }
+}
+
+// Экспортируем sequelize и функцию authenticate
+module.exports = { sequelize, authenticate, syncModels };

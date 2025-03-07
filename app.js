@@ -1,13 +1,13 @@
-// Подключаем модули
-require('dotenv').config();
 const express = require('express');
+const dotenv = require('dotenv');
 const cors = require('cors');
-const sequelize = require('./models/index');
+const { authenticate, syncModels } = require('./models/index.js');  // Импортируем функцию синхронизации
 
-// Инициализация Express-приложения
+dotenv.config();  // Загружаем переменные окружения
+
 const app = express();
 
-// Middleware для обработки CORS и JSON
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -19,13 +19,16 @@ app.get('/', (req, res) => {
 
 // Запуск сервера на порту из .env или 5000 по умолчанию
 const PORT = process.env.PORT || 5000;
- app.listen(PORT, async () => {
+
+(async () => {
     try {
-        await sequelize.authenticate();
-        console.log(`🚀 Сервер запущен на порту ${PORT}, соединение с БД успешно!`)
+      await authenticate();
+      await syncModels();
+      app.listen(PORT, () => {
+        console.log(`🚀 Сервер запущен на порту ${PORT}`);
+      });
     } catch (error) {
-        console.error('Ошибка подключения к БД:', error)
+      console.error('❌ Ошибка при запуске сервера:', error);
     }
-    
+  })();
   
-});
