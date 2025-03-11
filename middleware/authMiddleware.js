@@ -29,3 +29,26 @@ module.exports.authenticate = async (req, res, next) => {
     return res.status(401).json({ message: 'Неверный токен' });
   }
 };
+
+
+module.exports.authenticateFileRoutes = async (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ message: 'Токен не найден' });
+  }
+
+  try {
+    // Декодируем токен с использованием JWT_SECRET для файловых маршрутов
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);  // Для файлов используем JWT_SECRET
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      console.log('Ошибка: Токен истек');
+      return res.status(401).json({ message: 'Токен истек, пожалуйста, обновите токен' });
+    }
+    console.log('Ошибка при верификации токена для файловых маршрутов:', error);
+    return res.status(401).json({ message: 'Неверный токен' });
+  }
+};
